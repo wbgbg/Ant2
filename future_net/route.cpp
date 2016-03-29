@@ -127,6 +127,14 @@ void Ant::releasePheno(){
 }//信息素挥发
 
 void timeOver(int x) {
+    if (Ant::currentAnswer.size()!=0) {
+        for (auto &answerIter : Ant::currentAnswer) {
+            reverse(answerIter->passedEdges.begin(),answerIter->passedEdges.end());
+            for (auto answer2Iter : answerIter->passedEdges) {
+                record_result(answer2Iter->edgeNum);
+            }
+        }
+    }
     throw range_error("time over");//抛出异常
     //timeCount++;
     //cout << timeCount << "s has passed " << maxSize << endl;
@@ -252,12 +260,5 @@ void search_route(char *topo[5000], int edge_num, char *demand)
     } 
     catch (...) {
         cout << "over" << endl;
-    }
-    if (Ant::currentAnswer.size()!=0) {
-        for (auto answerIter : Ant::currentAnswer) {
-            for (auto answer2Iter : answerIter->passedEdges) {
-                record_result(answer2Iter->edgeNum);
-            }
-        }
     }
 }
