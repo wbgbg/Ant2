@@ -3,11 +3,11 @@
 #include <vector>
 #include <set>
 #include <iostream>
-#define START_PHENO 1000
+#define START_PHENO 100
 #define ALPHA 0.3
 #define BETA 2.5
-#define Q_PHENO 80
-#define Q_DIST 80
+#define Q_PHENO 100.0
+#define Q_DIST 100.0
 #define PHENO_DECREASE 0.95
 using namespace std;
 class DirectedEdge {
@@ -47,6 +47,7 @@ public:
     ~Ant() {}//析构函数
     void travel();
     void update();
+    void downdate();
     static void releasePheno();//信息素挥发
     static void printPheno();
     static vector<vector<DirectedEdge> > originMap;//图的临接表
@@ -55,6 +56,7 @@ public:
     static vector<NewDirectedEdge*> currentAnswer;//指向每个边的指针数组
     static int currentCost;//当前最优路径
     static int destPosition;
+    static int calc;
     bool arrived;
 private:
     int _position;

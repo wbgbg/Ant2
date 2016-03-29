@@ -25,6 +25,7 @@ vector<vector<DirectedEdge> > Ant::originMap(601);
 vector<vector<NewDirectedEdge> > Ant::newMap(601);
 int Ant::destPosition;
 set<int> Ant::demandSet;
+int Ant::calc;
 vector<NewDirectedEdge *> Ant::currentAnswer;
 int Ant::currentCost;
 DirectedEdge::DirectedEdge(int destNode, int edgeNum, int edgeCost) {
@@ -93,6 +94,7 @@ void Ant::travel() {
             //    cout << routine->destNode;
             //}
             cout << "cost:" << _cost << endl;
+            //getchar();
             currentCost = _cost;
             currentAnswer = _visitedEdge;
         }//如果当前cost小于最好的currentCost
@@ -115,9 +117,14 @@ void Ant::travel() {
 void Ant::update() {
     for (NewDirectedEdge* passEdge : _visitedEdge) {
         passEdge->pheno+=Q_PHENO/_cost;
+        //cout << Q_PHENO/_cost << endl;
     }
 }//迭代较优的路径更新信息素
-
+void Ant::downdate() {
+    for (NewDirectedEdge* passEdge: _visitedEdge) {
+        passEdge->pheno*=0.999999;
+    }
+}
 void Ant::releasePheno(){
     for (int i=0;i<newMap.size();i++) {
         for (NewDirectedEdge &edge : newMap[i]) {
@@ -125,6 +132,25 @@ void Ant::releasePheno(){
         }
     }
 }//信息素挥发
+
+void Ant::printPheno(){
+    set<int> xSet = {1,9,14,75,156,111,171,106,29,25,54,50,64,142,159,81,170,84,107,141};
+    double sum=0;
+    int num=0;
+    for (int i=0;i<newMap.size();i++) {
+        for (auto edge : newMap[i]) {
+            sum += edge.pheno;
+            num++;
+            for (auto edgeI : edge.passedEdges) {
+                if (xSet.find(edgeI->destNode) != xSet.end()) {
+                    cout << "pheno :" << edge.pheno << endl;
+                    break;
+                }
+            }
+        }
+    }
+    cout << "avarage pheno " << sum/num << endl;
+}
 
 void timeOver(int x) {
     if (Ant::currentAnswer.size()!=0) {
@@ -242,17 +268,24 @@ void search_route(char *topo[5000], int edge_num, char *demand)
         int round=0;
         while (true) {
             round++;
-            for (int i = 0; i < 1000; i++) {
+            Ant::calc=0;
+            for (int i = 0; i < 100; i++) {
                 antTeam.push_back(Ant(sourceNode, i));
                 //cout << "send a new ant" << endl;
                 antTeam[i].travel();
+                if (antTeam[i].arrived) {
+                    Ant::calc++;
+                }
             }//所有蚂蚁走一圈
-            Ant::releasePheno();//信息素挥发
-            for (int i = 0; i < 1000; i++) {
+            //Ant::releasePheno();//信息素挥发
+            for (int i = 0; i < 100; i++) {
                 if(antTeam[i].arrived) {
                     antTeam[i].update();
+                } else {
+                    antTeam[i].downdate();
                 }
             }//到达最终节点的蚂蚁判断是否更新信息素
+            //cout << Ant::calc << " ants arrived" << endl;
             //Ant::printPheno();//打印测试节点的信息素
             //sleep(1);
             antTeam.clear();
