@@ -1,0 +1,8 @@
+.DS_Store
+.idea/
+bin/
+build/
+future_net.tar.gz
+result
+test/
+
