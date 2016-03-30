@@ -4,12 +4,14 @@
 #include <set>
 #include <iostream>
 #define START_PHENO 100
-#define ALPHA 0.3
-#define BETA 2.5
+#define ALPHA 1
+#define BETA 3
 #define Q_PHENO 10000.0
 #define Q_DIST 100.0
 #define PHENO_DECREASE 0.95
 #define REDUCE_PHENO 0.999
+#define ANT_NUM 1
+//#define minPheno 10
 using namespace std;
 class DirectedEdge {
 public:
@@ -59,10 +61,10 @@ public:
     static int destPosition;
     static int calc;
     bool arrived;
+    set<int> _tabuLists;
 private:
     int _position;
     vector<bool> _visited;
-    set<int> _tabuLists;
     vector<NewDirectedEdge*> _visitedEdge;
     NewDirectedEdge *selectEdge();
     int _cost;

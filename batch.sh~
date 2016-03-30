@@ -37,4 +37,4 @@ cp future_net.tar.gz ../
 rm -rf code
 rm -f future_net.tar.gz
 cd ..
-./bin/future_net ../test-case/case3/topo.csv ../test-case/case3/demand.csv result
+./bin/future_net ../test-case/case2/topo.csv ../test-case/case2/demand.csv result

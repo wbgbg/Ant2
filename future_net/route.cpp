@@ -122,7 +122,10 @@ void Ant::update() {
 }//迭代较优的路径更新信息素
 void Ant::downdate() {
     for (NewDirectedEdge* passEdge: _visitedEdge) {
-        passEdge->pheno*= REDUCE_PHENO;
+        passEdge->pheno *= pow(REDUCE_PHENO,maxlen - _tabuLists.size());
+        //if(passEdge->pheno < minPheno){
+        //    passEdge->pheno = minPheno;
+        //}
     }
 }
 void Ant::releasePheno(){
@@ -243,11 +246,7 @@ void search_route(char *topo[5000], int edge_num, char *demand)
     tick.it_value.tv_usec=0;//it_value指定初始定时时间
     tick.it_interval.tv_sec=0;
     tick.it_interval.tv_usec=10000;//it_interval指定定时间隔
-    int res=setitimer(ITIMER_PROF, &tick, NULL);//抛出SIGALRM信号
-    if (res!=0) {
-        cout << "set timer fail errno:" << errno << endl;
-    }
-    
+
     cout << "search_route begin" << endl;
     vector<int> demandVec;
     strToVector(demand, ",|", &demandVec);//字符串转换成必经节点数组demandVec
@@ -274,11 +273,15 @@ void search_route(char *topo[5000], int edge_num, char *demand)
     Ant::destPosition=destNode;
     vector<Ant> antTeam;
     try {
+        int res=setitimer(ITIMER_PROF, &tick, NULL);//抛出SIGALRM信号
+        if (res!=0) {
+            cout << "set timer fail errno:" << errno << endl;
+        }
         int round=0;
         while (true) {
             round++;
             Ant::calc=0;
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < ANT_NUM; i++) {
                 antTeam.push_back(Ant(sourceNode, i));
                 //cout << "send a new ant" << endl;
                 antTeam[i].travel();
@@ -287,7 +290,12 @@ void search_route(char *topo[5000], int edge_num, char *demand)
                 }
             }//所有蚂蚁走一圈
             //Ant::releasePheno();//信息素挥发
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < ANT_NUM; i++) {
+                if(antTeam[i]._tabuLists.size() > maxlen) {
+                    maxlen = antTeam[i]._tabuLists.size();
+                }
+            }
+            for (int i = 0; i < ANT_NUM; i++) {
                 if(antTeam[i].arrived) {
                     antTeam[i].update();
                 } else {
@@ -298,6 +306,7 @@ void search_route(char *topo[5000], int edge_num, char *demand)
             //Ant::printPheno();//打印测试节点的信息素
             //sleep(1);
             antTeam.clear();
+            maxlen = 0;
         }
     } 
     catch (TimeOut &err) {
