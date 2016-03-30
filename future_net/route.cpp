@@ -16,6 +16,7 @@
 #include <cmath>
 #include <unistd.h>
 #include <fstream>
+#include <string.h>
 using namespace std;
 //你要完成的功能总入口
 
