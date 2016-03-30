@@ -247,7 +247,7 @@ void search_route(char *topo[5000], int edge_num, char *demand, const char *seg)
         constArg["BETA"]=BETA;
         constArg["Q_PHENO"]=Q_PHENO;
         constArg["Q_DIST"]=Q_DIST;
-        constArg["REDUCE_PHENO"];
+        constArg["REDUCE_PHENO"]=REDUCE_PHENO;
         constArg["PHENO_DECREASE"]=PHENO_DECREASE;
         constArg["START_PHENO"]=START_PHENO;
     } else {

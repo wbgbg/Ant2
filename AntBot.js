@@ -14,7 +14,7 @@ var segmentsRange = {
 	Q_DIST : {min:100,max:100,step:1}
 };
 var number = 0;
-function dfs(segments,segmentsNum) {
+function dfs(segments,segmentsNum,max) {
 	if (segmentsNum == segmentsList.length) {
 		number ++;
 		var outputString = "";
@@ -25,7 +25,7 @@ function dfs(segments,segmentsNum) {
 		}
 		fs.writeFileSync('arg', outputString);
 		var sum=0;
-		for (var i=0;i<10;i++) {
+		for (var i=0;i<max;i++) {
 			var child = execSync('./bin/future_net case3/topo.csv case3/demand.csv result arg');
 			var cost = fs.readFileSync('results');
 			//console.log(cost.toString());
@@ -33,22 +33,26 @@ function dfs(segments,segmentsNum) {
 				sum = 0;
 				console.log('fail');
 				break;
+			} else {
+				console.log('su');
 			}
 			sum += parseInt(cost.toString());
 		}
 		if (sum !=0) {
-			fs.appendFileSync('Answers',segString + sum + "\n");
+			fs.appendFileSync('Answers' + max,segString + sum + "\n");
 			console.log(segments);
 			console.log(sum);
 		}
 	} else {
 		for (var i=segmentsRange[segmentsList[segmentsNum]].min; i<=segmentsRange[segmentsList[segmentsNum]].max; i=i+segmentsRange[segmentsList[segmentsNum]].step) {
 			segments[segmentsList[segmentsNum]] = i;
-			dfs(segments,segmentsNum+1);
+			dfs(segments,segmentsNum+1,max);
 		}
 	}
 }
 
 var segments={};
 
-dfs(segments,0)
+dfs(segments,0,5);
+
+dfs(segments,0,10);
