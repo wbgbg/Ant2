@@ -6,9 +6,10 @@
 #define START_PHENO 100
 #define ALPHA 0.3
 #define BETA 2.5
-#define Q_PHENO 100.0
+#define Q_PHENO 10000.0
 #define Q_DIST 100.0
 #define PHENO_DECREASE 0.95
+#define REDUCE_PHENO 0.999
 using namespace std;
 class DirectedEdge {
 public:

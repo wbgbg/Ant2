@@ -122,7 +122,7 @@ void Ant::update() {
 }//迭代较优的路径更新信息素
 void Ant::downdate() {
     for (NewDirectedEdge* passEdge: _visitedEdge) {
-        passEdge->pheno*=0.999999;
+        passEdge->pheno*= REDUCE_PHENO;
     }
 }
 void Ant::releasePheno(){
@@ -132,6 +132,14 @@ void Ant::releasePheno(){
         }
     }
 }//信息素挥发
+
+struct TimeOut : public exception
+{
+    const char * what () const throw ()
+    {
+        return "timeout";
+    }
+};
 
 void Ant::printPheno(){
     set<int> xSet = {1,9,14,75,156,111,171,106,29,25,54,50,64,142,159,81,170,84,107,141};
@@ -153,6 +161,7 @@ void Ant::printPheno(){
 }
 
 void timeOver(int x) {
+    signal(SIGPROF, timeOver);
     if (Ant::currentAnswer.size()!=0) {
         for (auto &answerIter : Ant::currentAnswer) {
             reverse(answerIter->passedEdges.begin(),answerIter->passedEdges.end());
@@ -161,7 +170,7 @@ void timeOver(int x) {
             }
         }
     }
-    throw range_error("time over");//抛出异常
+    throw TimeOut();//抛出异常
     //timeCount++;
     //cout << timeCount << "s has passed " << maxSize << endl;
 }
@@ -228,13 +237,13 @@ void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap) {
 void search_route(char *topo[5000], int edge_num, char *demand)
 {
     srand(time(0));//用当前时间值种随机数种子
-    signal(SIGALRM, timeOver);//SIGALRM触发timeover函数
+    signal(SIGPROF, timeOver);//SIGALRM触发timeover函数
     struct itimerval tick;
     tick.it_value.tv_sec=9;
     tick.it_value.tv_usec=0;//it_value指定初始定时时间
-    tick.it_interval.tv_sec=1;
-    tick.it_interval.tv_usec=0;//it_interval指定定时间隔
-    int res=setitimer(ITIMER_REAL, &tick, NULL);//抛出SIGALRM信号
+    tick.it_interval.tv_sec=0;
+    tick.it_interval.tv_usec=10000;//it_interval指定定时间隔
+    int res=setitimer(ITIMER_PROF, &tick, NULL);//抛出SIGALRM信号
     if (res!=0) {
         cout << "set timer fail errno:" << errno << endl;
     }
@@ -269,7 +278,7 @@ void search_route(char *topo[5000], int edge_num, char *demand)
         while (true) {
             round++;
             Ant::calc=0;
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 1; i++) {
                 antTeam.push_back(Ant(sourceNode, i));
                 //cout << "send a new ant" << endl;
                 antTeam[i].travel();
@@ -278,7 +287,7 @@ void search_route(char *topo[5000], int edge_num, char *demand)
                 }
             }//所有蚂蚁走一圈
             //Ant::releasePheno();//信息素挥发
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 1; i++) {
                 if(antTeam[i].arrived) {
                     antTeam[i].update();
                 } else {
@@ -291,7 +300,11 @@ void search_route(char *topo[5000], int edge_num, char *demand)
             antTeam.clear();
         }
     } 
-    catch (...) {
+    catch (TimeOut &err) {
+        cout << "over" << endl;
+    }
+    catch(exception& e)
+    {
         cout << "over" << endl;
     }
 }
