@@ -3,14 +3,14 @@
 #include <vector>
 #include <set>
 #include <iostream>
+#include <map>
 #define START_PHENO 100
-#define ALPHA 1
-#define BETA 3
+#define ALPHA 1.0
+#define BETA 3.0
 #define Q_PHENO 10000.0
 #define Q_DIST 100.0
 #define PHENO_DECREASE 0.95
 #define REDUCE_PHENO 0.999
-#define ANT_NUM 1
 //#define minPheno 10
 using namespace std;
 class DirectedEdge {
@@ -29,6 +29,7 @@ public:
     double pheno;
     bool exist;
 };
+
 
 class NewDirectedEdge : public DirectedEdge{
 public:
@@ -52,7 +53,7 @@ public:
     void update();
     void downdate();
     static void releasePheno();//信息素挥发
-    static void printPheno();
+    //static void printPheno();
     static vector<vector<DirectedEdge> > originMap;//图的临接表
     static vector<vector<NewDirectedEdge> > newMap;
     static set<int> demandSet;
@@ -70,6 +71,6 @@ private:
     int _cost;
     int _num;
 };
-void search_route(char *graph[5000], int edge_num, char *condition);
+void search_route(char *graph[5000], int edge_num, char *condition, const char *seg);
 
 #endif

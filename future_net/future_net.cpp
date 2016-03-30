@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    search_route(topo, edge_num, demand);
+    search_route(topo, edge_num, demand, argv[4] ? argv[4] : "");
 
     char *result_file = argv[3];
     write_result(result_file);

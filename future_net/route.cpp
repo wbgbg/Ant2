@@ -3,10 +3,8 @@
 #include "lib/util.cpp"
 #include <algorithm>
 #include <stdio.h>
-#include <vector>
 #include <iostream>
 #include <iterator>
-#include <set>
 #include <deque>
 #include <string>
 #include <sys/time.h>
@@ -14,10 +12,10 @@
 #include <errno.h>
 #include <time.h>
 #include <stdlib.h>
-#include <map>
 #include <complex>
 #include <cmath>
 #include <unistd.h>
+#include <fstream>
 using namespace std;
 //你要完成的功能总入口
 
@@ -28,11 +26,13 @@ set<int> Ant::demandSet;
 int Ant::calc;
 vector<NewDirectedEdge *> Ant::currentAnswer;
 int Ant::currentCost;
+bool stopFlag = false;
+map<string, double> constArg;
 DirectedEdge::DirectedEdge(int destNode, int edgeNum, int edgeCost) {
     this->destNode = destNode;
     this->edgeNum = edgeNum;
     this->edgeCost = edgeCost;
-    this->pheno = START_PHENO;
+    this->pheno = constArg.at("START_PHENO");
     this->exist = true;
 }
 int tooAlpha=0,tooBeta=0;
@@ -59,7 +59,7 @@ NewDirectedEdge* Ant::selectEdge() {
                     cout << "cost 0";
                     break;
                 }
-                double answer = pow(nextEdge->pheno,ALPHA)*pow(Q_DIST/nextEdge->edgeCost,BETA);
+                double answer = pow(nextEdge->pheno,constArg.at("ALPHA"))*pow(constArg.at("Q_DIST")/nextEdge->edgeCost,constArg.at("BETA"));
                 partial.push_back(pair<NewDirectedEdge *, double>(nextEdge, answer));
                 sum+=answer;
             }
@@ -116,13 +116,13 @@ void Ant::travel() {
 
 void Ant::update() {
     for (NewDirectedEdge* passEdge : _visitedEdge) {
-        passEdge->pheno+=Q_PHENO/_cost;
+        passEdge->pheno+=constArg.at("Q_PHENO")/_cost;
         //cout << Q_PHENO/_cost << endl;
     }
 }//迭代较优的路径更新信息素
 void Ant::downdate() {
     for (NewDirectedEdge* passEdge: _visitedEdge) {
-        passEdge->pheno *= pow(REDUCE_PHENO,maxlen - _tabuLists.size());
+        passEdge->pheno *= pow(constArg.at("REDUCE_PHENO"),maxlen - _tabuLists.size());
         //if(passEdge->pheno < minPheno){
         //    passEdge->pheno = minPheno;
         //}
@@ -131,7 +131,7 @@ void Ant::downdate() {
 void Ant::releasePheno(){
     for (int i=0;i<newMap.size();i++) {
         for (NewDirectedEdge &edge : newMap[i]) {
-            edge.pheno *= PHENO_DECREASE;
+            edge.pheno *= constArg.at("PHENO_DECREASE");
         }
     }
 }//信息素挥发
@@ -143,7 +143,7 @@ struct TimeOut : public exception
         return "timeout";
     }
 };
-
+/*
 void Ant::printPheno(){
     set<int> xSet = {1,9,14,75,156,111,171,106,29,25,54,50,64,142,159,81,170,84,107,141};
     double sum=0;
@@ -162,18 +162,10 @@ void Ant::printPheno(){
     }
     cout << "avarage pheno " << sum/num << endl;
 }
-
+*/
 void timeOver(int x) {
-    signal(SIGPROF, timeOver);
-    if (Ant::currentAnswer.size()!=0) {
-        for (auto &answerIter : Ant::currentAnswer) {
-            reverse(answerIter->passedEdges.begin(),answerIter->passedEdges.end());
-            for (auto answer2Iter : answerIter->passedEdges) {
-                record_result(answer2Iter->edgeNum);
-            }
-        }
-    }
-    throw TimeOut();//抛出异常
+    stopFlag = true;
+    //throw TimeOut();//抛出异常
     //timeCount++;
     //cout << timeCount << "s has passed " << maxSize << endl;
 }
@@ -237,8 +229,30 @@ void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap) {
     }
 }
 
-void search_route(char *topo[5000], int edge_num, char *demand)
+void getArgs(ifstream &fin,map<string, double> &seg) {
+    string argName;
+    while (fin >> argName) {
+        double argValue;
+        fin >> argValue;
+        seg[argName] = argValue;
+    }
+}
+
+void search_route(char *topo[5000], int edge_num, char *demand, const char *seg)
 {
+    constArg.clear();
+    if (strcmp(seg,"")==0) {
+        constArg["ALPHA"]=ALPHA;
+        constArg["BETA"]=BETA;
+        constArg["Q_PHENO"]=Q_PHENO;
+        constArg["Q_DIST"]=Q_DIST;
+        constArg["REDUCE_PHENO"];
+        constArg["PHENO_DECREASE"]=PHENO_DECREASE;
+        constArg["START_PHENO"]=START_PHENO;
+    } else {
+        ifstream fin(seg);
+        getArgs(fin, constArg);
+    }
     srand(time(0));//用当前时间值种随机数种子
     signal(SIGPROF, timeOver);//SIGALRM触发timeover函数
     struct itimerval tick;
@@ -281,7 +295,10 @@ void search_route(char *topo[5000], int edge_num, char *demand)
         while (true) {
             round++;
             Ant::calc=0;
-            for (int i = 0; i < ANT_NUM; i++) {
+            if (stopFlag) {
+                break;
+            }
+            for (int i = 0; i < 1; i++) {
                 antTeam.push_back(Ant(sourceNode, i));
                 //cout << "send a new ant" << endl;
                 antTeam[i].travel();
@@ -290,12 +307,12 @@ void search_route(char *topo[5000], int edge_num, char *demand)
                 }
             }//所有蚂蚁走一圈
             //Ant::releasePheno();//信息素挥发
-            for (int i = 0; i < ANT_NUM; i++) {
+            for (int i = 0; i < 1; i++) {
                 if(antTeam[i]._tabuLists.size() > maxlen) {
                     maxlen = antTeam[i]._tabuLists.size();
                 }
             }
-            for (int i = 0; i < ANT_NUM; i++) {
+            for (int i = 0; i < 1; i++) {
                 if(antTeam[i].arrived) {
                     antTeam[i].update();
                 } else {
@@ -315,5 +332,15 @@ void search_route(char *topo[5000], int edge_num, char *demand)
     catch(exception& e)
     {
         cout << "over" << endl;
+    }
+    ofstream fout("./results");
+    fout << Ant::currentCost << endl;
+    if (Ant::currentAnswer.size()!=0) {
+        for (auto &answerIter : Ant::currentAnswer) {
+            reverse(answerIter->passedEdges.begin(),answerIter->passedEdges.end());
+            for (auto answer2Iter : answerIter->passedEdges) {
+                record_result(answer2Iter->edgeNum);
+            }
+        }
     }
 }
