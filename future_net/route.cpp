@@ -239,23 +239,18 @@ void getArgs(ifstream &fin,map<string, double> &seg) {
     }
 }
 
-void search_route(char *topo[5000], int edge_num, char *demand, const char *seg)
+void search_route(char *topo[5000], int edge_num, char *demand)
 {
     constArg.clear();
-    if (strcmp(seg,"")==0) {
-        constArg["ALPHA"]=ALPHA;
-        constArg["BETA"]=BETA;
-        constArg["Q_PHENO"]=Q_PHENO;
-        constArg["Q_DIST"]=Q_DIST;
-        constArg["REDUCE_PHENO"]=REDUCE_PHENO;
-        constArg["PHENO_DECREASE"]=PHENO_DECREASE;
-        constArg["START_PHENO"]=START_PHENO;
-    } else {
-        ifstream fin(seg);
-        getArgs(fin, constArg);
-    }
+    constArg["ALPHA"]=ALPHA;
+    constArg["BETA"]=BETA;
+    constArg["Q_PHENO"]=Q_PHENO;
+    constArg["Q_DIST"]=Q_DIST;
+    constArg["REDUCE_PHENO"]=REDUCE_PHENO;
+    constArg["PHENO_DECREASE"]=PHENO_DECREASE;
+    constArg["START_PHENO"]=START_PHENO;
     srand(time(0));//用当前时间值种随机数种子
-    signal(SIGVTALRM, timeOver);//SIGALRM触发timeover函数
+    signal(SIGPROF, timeOver);//SIGALRM触发timeover函数
     struct itimerval tick;
     tick.it_value.tv_sec=9;
     tick.it_value.tv_usec=0;//it_value指定初始定时时间
@@ -288,7 +283,7 @@ void search_route(char *topo[5000], int edge_num, char *demand, const char *seg)
     Ant::destPosition=destNode;
     vector<Ant> antTeam;
     try {
-        int res=setitimer(ITIMER_VIRTUAL, &tick, NULL);//抛出SIGALRM信号
+        int res=setitimer(ITIMER_PROF, &tick, NULL);//抛出SIGALRM信号
         if (res!=0) {
             cout << "set timer fail errno:" << errno << endl;
         }

@@ -5,9 +5,9 @@
 #include <iostream>
 #include <map>
 #define START_PHENO 100
-#define ALPHA 1.0
-#define BETA 3.0
-#define Q_PHENO 10000.0
+#define ALPHA 1.7
+#define BETA 5.0
+#define Q_PHENO 18000.0
 #define Q_DIST 100.0
 #define PHENO_DECREASE 0.95
 #define REDUCE_PHENO 0.999
@@ -71,6 +71,6 @@ private:
     int _cost;
     int _num;
 };
-void search_route(char *graph[5000], int edge_num, char *condition, const char *seg);
+void search_route(char *graph[5000], int edge_num, char *condition);
 
 #endif
