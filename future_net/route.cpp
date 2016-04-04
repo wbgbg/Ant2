@@ -29,6 +29,8 @@ vector<NewDirectedEdge *> Ant::currentAnswer;
 int Ant::currentCost;
 bool stopFlag = false;
 map<string, double> constArg;
+//vector<int> bestAnswer = {254,236,265,227,240}
+
 DirectedEdge::DirectedEdge(int destNode, int edgeNum, int edgeCost) {
     this->destNode = destNode;
     this->edgeNum = edgeNum;
@@ -118,15 +120,18 @@ void Ant::travel() {
 void Ant::update() {
     for (NewDirectedEdge* passEdge : _visitedEdge) {
         passEdge->pheno+=constArg.at("Q_PHENO")/_cost;
-        //cout << Q_PHENO/_cost << endl;
+        //cout << passEdge->pheno<< endl;
+        if(passEdge->pheno > maxPheno){
+            passEdge->pheno = maxPheno;
+        }
     }
 }//迭代较优的路径更新信息素
 void Ant::downdate() {
     for (NewDirectedEdge* passEdge: _visitedEdge) {
-        passEdge->pheno *= pow(constArg.at("REDUCE_PHENO"),maxlen - _tabuLists.size());
-        //if(passEdge->pheno < minPheno){
-        //    passEdge->pheno = minPheno;
-        //}
+        passEdge->pheno *= constArg.at("REDUCE_PHENO");
+        if(passEdge->pheno < minPheno){
+            passEdge->pheno = minPheno;
+        }
     }
 }
 void Ant::releasePheno(){
@@ -252,7 +257,7 @@ void search_route(char *topo[5000], int edge_num, char *demand)
     srand(time(0));//用当前时间值种随机数种子
     signal(SIGPROF, timeOver);//SIGALRM触发timeover函数
     struct itimerval tick;
-    tick.it_value.tv_sec=9;
+    tick.it_value.tv_sec=9.8;
     tick.it_value.tv_usec=0;//it_value指定初始定时时间
     tick.it_interval.tv_sec=0;
     tick.it_interval.tv_usec=10000;//it_interval指定定时间隔
@@ -294,7 +299,7 @@ void search_route(char *topo[5000], int edge_num, char *demand)
             if (stopFlag) {
                 break;
             }
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < ANT_NUM; i++) {
                 antTeam.push_back(Ant(sourceNode, i));
                 //cout << "send a new ant" << endl;
                 antTeam[i].travel();
@@ -302,24 +307,26 @@ void search_route(char *topo[5000], int edge_num, char *demand)
                     Ant::calc++;
                 }
             }//所有蚂蚁走一圈
-            //Ant::releasePheno();//信息素挥发
-            for (int i = 0; i < 1; i++) {
-                if(antTeam[i]._tabuLists.size() > maxlen) {
-                    maxlen = antTeam[i]._tabuLists.size();
-                }
-            }
-            for (int i = 0; i < 1; i++) {
+            //for (int i = 0; i < ANT_NUM; i++) {
+            //    if(antTeam[i]._tabuLists.size() > maxlen) {
+            //        maxlen = antTeam[i]._tabuLists.size();
+            //    }
+            //}
+            for (int i = 0; i < ANT_NUM; i++) {
                 if(antTeam[i].arrived) {
                     antTeam[i].update();
-                } else {
-                    antTeam[i].downdate();
-                }
+                    //Ant::releasePheno();
+                } 
+                //else {
+                //    antTeam[i].downdate();
+                //}
             }//到达最终节点的蚂蚁判断是否更新信息素
+            //Ant::releasePheno();//信息素挥发
             //cout << Ant::calc << " ants arrived" << endl;
             //Ant::printPheno();//打印测试节点的信息素
             //sleep(1);
             antTeam.clear();
-            maxlen = 0;
+            //maxlen = 0;
         }
     } 
     catch (TimeOut &err) {
