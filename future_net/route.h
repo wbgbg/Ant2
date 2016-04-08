@@ -4,13 +4,14 @@
 #include <set>
 #include <iostream>
 #include <map>
-#define START_PHENO 100
+#define START_PHENO 30
+#define MUTLI_PHENO 100
 #define ALPHA 1.7
 #define BETA 5.0
 #define Q_PHENO 18000.0
 #define Q_DIST 100.0
 #define PHENO_DECREASE 0.8
-#define REDUCE_PHENO 0.999
+#define REDUCE_PHENO 0.9
 #define ANT_NUM 1
 #define minPheno 50
 #define maxPheno 500
@@ -20,7 +21,7 @@ public:
     DirectedEdge() {
         this->exist = false;
     }
-    DirectedEdge(int destNode, int edgeNum, int edgeCost);
+    DirectedEdge(int destNode, int edgeNum, int edgeCost, double pheno);
     void printEdge(int sourceNode) {
         cout << sourceNode << "," << this->destNode << "," << this->edgeNum << "," << this->edgeCost << endl;
     }
@@ -35,7 +36,7 @@ public:
 
 class NewDirectedEdge : public DirectedEdge{
 public:
-    NewDirectedEdge(int destNode,int edgeNum, int edgeCost, vector<DirectedEdge*> &passedEdges, set<int> &passedNodes);
+    NewDirectedEdge(int destNode,int edgeNum, int edgeCost, double pheno, vector<DirectedEdge*> &passedEdges, set<int> &passedNodes);
     set<int> passedNodes;
     vector<DirectedEdge*> passedEdges;
 };
@@ -49,6 +50,7 @@ public:
         _num = num;
         arrived=false;
         _tabuLists.clear();
+        _visited[sourcePosition] = true;
     }
     ~Ant() {}//析构函数
     void travel();

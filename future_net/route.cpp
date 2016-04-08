@@ -31,19 +31,29 @@ bool stopFlag = false;
 map<string, double> constArg;
 //vector<int> bestAnswer = {254,236,265,227,240}
 
-DirectedEdge::DirectedEdge(int destNode, int edgeNum, int edgeCost) {
+DirectedEdge::DirectedEdge(int destNode, int edgeNum, int edgeCost, double pheno) {
     this->destNode = destNode;
     this->edgeNum = edgeNum;
     this->edgeCost = edgeCost;
-    this->pheno = constArg.at("START_PHENO");
+    this->pheno = pheno;
     this->exist = true;
 }
 int tooAlpha=0,tooBeta=0;
 
 NewDirectedEdge* Ant::selectEdge() {
-    double sum=0.0;
-    vector<pair<NewDirectedEdge *, double> > partial;
-    partial.clear();
+    double sum1=0.0,sum2=0.0;
+    //int mutli;
+    int max = 0;
+    double answer1;
+    vector<pair<NewDirectedEdge *, double> > partial1,partial2;
+    partial1.clear();
+    partial2.clear();
+    for (int edge=0;edge<newMap[_position].size();edge++) {
+        NewDirectedEdge* nextEdge = &newMap[_position][edge];
+        if((nextEdge->edgeNum==-1)&&(nextEdge->edgeCost>max)){
+            max = nextEdge->edgeCost;
+        }
+    }
     for (int edge=0;edge<newMap[_position].size();edge++) {
         NewDirectedEdge* nextEdge = &newMap[_position][edge];
         if (_tabuLists.size()!=(demandSet.size()-1) && nextEdge->destNode==destPosition) {
@@ -62,16 +72,38 @@ NewDirectedEdge* Ant::selectEdge() {
                     cout << "cost 0";
                     break;
                 }
-                double answer = pow(nextEdge->pheno,constArg.at("ALPHA"))*pow(constArg.at("Q_DIST")/nextEdge->edgeCost,constArg.at("BETA"));
-                partial.push_back(pair<NewDirectedEdge *, double>(nextEdge, answer));
-                sum+=answer;
+                if(nextEdge->edgeNum == -1){
+                    answer1 = pow(nextEdge->pheno,constArg.at("ALPHA"))*pow(constArg.at("Q_DIST")/nextEdge->edgeCost,constArg.at("BETA"));
+                }
+                else{
+                    if(max!=0){
+                        answer1 = pow(nextEdge->pheno,constArg.at("ALPHA"))*pow(constArg.at("Q_DIST")/max,constArg.at("BETA"));
+                    }
+                    else{
+                        answer1 = pow(nextEdge->pheno,constArg.at("ALPHA"))*pow(constArg.at("Q_DIST")/nextEdge->edgeCost,constArg.at("BETA"));
+                    }
+                }
+                //if(nextEdge->edgeNum == -1){
+                //double answer1 = pow(nextEdge->pheno,constArg.at("ALPHA"))*pow(constArg.at("Q_DIST")/(nextEdge->edgeCost*mutli),constArg.at("BETA"));
+                partial1.push_back(pair<NewDirectedEdge *, double>(nextEdge, answer1));
+                    //cout<<nextEdge->edgeNum<<" "<<answer<<endl;
+                sum1+=answer1;
+                //}
+                //else{
+                //    double answer2 = pow(nextEdge->pheno,constArg.at("ALPHA"))*pow(constArg.at("Q_DIST")/nextEdge->edgeCost,constArg.at("BETA"));
+                //    partial2.push_back(pair<NewDirectedEdge *, double>(nextEdge, answer2));
+                    //cout<<nextEdge->edgeNum<<" "<<answer<<endl;
+                //    sum2+=answer2;
+                //}
             }
         }
     }
-    double answer = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/sum));
-    for (int edge=0;edge<partial.size();edge++) {
-        NewDirectedEdge *nextEdge =partial[edge].first;
-        double percentage = partial[edge].second;
+    //cout << "---" << endl;
+    //getchar();
+    double answer = static_cast <double> (rand()) / (static_cast <double> (RAND_MAX/sum1));
+    for (int edge=0;edge<partial1.size();edge++) {
+        NewDirectedEdge *nextEdge =partial1[edge].first;
+        double percentage = partial1[edge].second;
         if (percentage > answer) {
             return nextEdge;
         } else {
@@ -81,7 +113,7 @@ NewDirectedEdge* Ant::selectEdge() {
     return nullptr;
 }
 
-NewDirectedEdge::NewDirectedEdge(int destNode, int edgeNum, int edgeCost, vector<DirectedEdge*> &passedEdges, set<int> &passedNodes):DirectedEdge(destNode, edgeNum, edgeCost) {
+NewDirectedEdge::NewDirectedEdge(int destNode, int edgeNum, int edgeCost, double pheno, vector<DirectedEdge*> &passedEdges, set<int> &passedNodes):DirectedEdge(destNode, edgeNum, edgeCost, pheno) {
     this->passedEdges = passedEdges;
     this->passedNodes = passedNodes;
 }
@@ -89,7 +121,8 @@ NewDirectedEdge::NewDirectedEdge(int destNode, int edgeNum, int edgeCost, vector
 int maxlen=0;//当前含V'节点最多的路径中的V'节点数
 
 void Ant::travel() {
-    if (_position == destPosition) {
+    //cout<<_position<<endl;
+    if ((_position == destPosition)) {
         arrived=true;
         if (currentCost>_cost) {
             //for (auto routine : _visitedEdge) {
@@ -111,7 +144,10 @@ void Ant::travel() {
             }
             _visitedEdge.push_back(selectedEdge);
             _cost+=selectedEdge->edgeCost;
-            _tabuLists.insert(selectedEdge->destNode);
+            if(demandSet.find(_position)!=demandSet.end()){
+                _tabuLists.insert(selectedEdge->destNode);
+            }
+            
             travel();
         }
     }
@@ -129,8 +165,15 @@ void Ant::update() {
 void Ant::downdate() {
     for (NewDirectedEdge* passEdge: _visitedEdge) {
         passEdge->pheno *= constArg.at("REDUCE_PHENO");
-        if(passEdge->pheno < minPheno){
-            passEdge->pheno = minPheno;
+        if(passEdge->edgeNum==-1){
+            if(passEdge->pheno < minPheno){
+                passEdge->pheno = minPheno;
+            }
+        }
+        else{
+            if(passEdge->pheno < 5){
+                passEdge->pheno = 5;
+            }
         }
     }
 }
@@ -181,7 +224,7 @@ void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap) {
     vector<int> destDist;
     destDist.assign(NODE,INF);//初始化距离为无穷大
     deque<int> que(1,sourceNode);//处理队列
-    vector<int> precNode(600,-1);
+    vector<int> precNode(601,-1);
     vector<DirectedEdge*> precEdge(600,0);
     vector<bool> flag(NODE,0);//标志数组，判断是否在队列中
     destDist[sourceNode]=0;//出发点到自身路径长度为0
@@ -201,6 +244,7 @@ void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap) {
                 destDist[next]=destDist[now]+adjMap[now][i].edgeCost;//更新
                 precNode[next]=now;
                 precEdge[next]=&adjMap[now][i];
+                //cout << adjMap[now][i].edgeNum << "-" << &adjMap[now][i] << endl;
                 if(!flag[next])//若未在处理队列中
                 {
                     if(que.empty()||//空队列，或（或运算实现原理类似与运算）
@@ -225,11 +269,16 @@ void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap) {
         while (precNode[nodeJ]!=-1) {
             passedNodes.insert(nodeJ);
             passedEdges.push_back(precEdge[nodeJ]);
+            //cout << precEdge[nodeJ]->edgeNum << "-" << precEdge[nodeJ] << "-" << precEdge[nodeJ]->destNode << endl;
             cost+=precEdge[nodeJ]->edgeCost;
             nodeJ=precNode[nodeJ];
+            if (nodeJ!=sourceNode && Ant::demandSet.find(nodeJ) != Ant::demandSet.end()) {
+                cost=0;
+                break;
+            }
         }
         if (cost>0) {
-            NewDirectedEdge newEdge(nodeI,0,cost,passedEdges,passedNodes);
+            NewDirectedEdge newEdge(nodeI,-1,cost,MUTLI_PHENO,passedEdges,passedNodes);
             Ant::newMap[sourceNode].push_back(newEdge);
         }
     }
@@ -257,27 +306,35 @@ void search_route(char *topo[5000], int edge_num, char *demand)
     srand(time(0));//用当前时间值种随机数种子
     signal(SIGPROF, timeOver);//SIGALRM触发timeover函数
     struct itimerval tick;
-    tick.it_value.tv_sec=9.8;
+    tick.it_value.tv_sec=9.7;
     tick.it_value.tv_usec=0;//it_value指定初始定时时间
     tick.it_interval.tv_sec=0;
-    tick.it_interval.tv_usec=10000;//it_interval指定定时间隔
-
+    tick.it_interval.tv_usec=10000;//it_interval指定定时间
     cout << "search_route begin" << endl;
     vector<int> demandVec;
     strToVector(demand, ",|", &demandVec);//字符串转换成必经节点数组demandVec
     const int sourceNode = demandVec[0];
     const int destNode = demandVec[1];
+    int count = 0;
     for (int i=1;i<demandVec.size();i++) {
         Ant::demandSet.insert(demandVec[i]);
     }
-    
+    for (int i=0;i<601;i++) {
+        Ant::originMap[i].reserve(601);
+    }
     for (int nodeI=0; nodeI<edge_num; nodeI++) {
-        vector<int> topoVec;
+        vector<int> topoVec;   
         strToVector(topo[nodeI], ",", &topoVec);
-        DirectedEdge edgeNow(topoVec[2], topoVec[0], topoVec[3]);
+        set<int> passedNodes={topoVec[2]};
+        DirectedEdge edgeNow(topoVec[2], topoVec[0], topoVec[3],0);
         Ant::originMap[topoVec[1]].push_back(edgeNow);
+        DirectedEdge* place=&(*(--Ant::originMap[topoVec[1]].end()));
+        vector<DirectedEdge*> passedEdges={place};
+        NewDirectedEdge edgeNow2(topoVec[2],topoVec[0],topoVec[3],START_PHENO,passedEdges,passedNodes);
+        Ant::newMap[topoVec[1]].push_back(edgeNow2);
+        //cout << edgeNow2.passedEdges[0]->edgeNum << ":" << edgeNow2.passedEdges[0] << ":" << edgeNow2.passedEdges[0]->destNode << endl;
     }//字符串转换成临接表originMap
-
+    //getchar();
     for (auto nodeI : Ant::demandSet) {
         spfa(nodeI,Ant::originMap);
     }
@@ -316,9 +373,10 @@ void search_route(char *topo[5000], int edge_num, char *demand)
                 if(antTeam[i].arrived) {
                     antTeam[i].update();
                     //Ant::releasePheno();
+                    //cout << count <<endl;
                 } 
                 //else {
-                //    antTeam[i].downdate();
+                //   antTeam[i].downdate();
                 //}
             }//到达最终节点的蚂蚁判断是否更新信息素
             //Ant::releasePheno();//信息素挥发
@@ -327,6 +385,8 @@ void search_route(char *topo[5000], int edge_num, char *demand)
             //sleep(1);
             antTeam.clear();
             //maxlen = 0;
+            //count++;
+            
         }
     } 
     catch (TimeOut &err) {
