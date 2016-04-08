@@ -57,6 +57,7 @@ public:
     void update();
     void downdate();
     static void releasePheno();//信息素挥发
+    static int countEdges();
     //static void printPheno();
     static vector<vector<DirectedEdge> > originMap;//图的临接表
     static vector<vector<NewDirectedEdge> > newMap;
@@ -64,7 +65,9 @@ public:
     static vector<NewDirectedEdge*> currentAnswer;//指向每个边的指针数组
     static int currentCost;//当前最优路径
     static int destPosition;
+    static int nodes;
     static int calc;
+    static int distance[601][601];
     bool arrived;
     set<int> _tabuLists;
 private:

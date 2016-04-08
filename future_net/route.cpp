@@ -25,9 +25,12 @@ vector<vector<NewDirectedEdge> > Ant::newMap(601);
 int Ant::destPosition;
 set<int> Ant::demandSet;
 int Ant::calc;
+int Ant::nodes=0;
 vector<NewDirectedEdge *> Ant::currentAnswer;
 int Ant::currentCost;
 bool stopFlag = false;
+vector<int> beenTimes(601);
+int Ant::distance[601][601]={};
 map<string, double> constArg;
 //vector<int> bestAnswer = {254,236,265,227,240}
 
@@ -119,6 +122,14 @@ NewDirectedEdge::NewDirectedEdge(int destNode, int edgeNum, int edgeCost, double
 }
 
 int maxlen=0;//当前含V'节点最多的路径中的V'节点数
+
+int Ant::countEdges() {
+    int ans=0;
+    for (int i=0; i<nodes;i++) {
+        ans+=newMap[i].size();
+    }
+    return ans;
+}
 
 void Ant::travel() {
     //cout<<_position<<endl;
@@ -219,7 +230,10 @@ void timeOver(int x) {
     //cout << timeCount << "s has passed " << maxSize << endl;
 }
 
-void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap) {
+void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap, set<int> forbidLists) {
+    if (forbidLists.find(sourceNode)!=forbidLists.end()) {
+        return;
+    }
     const int &INF=0x7FFFFFFF,&NODE=adjMap.size();//用邻接表的大小传递顶点个数，减少参数传递
     vector<int> destDist;
     destDist.assign(NODE,INF);//初始化距离为无穷大
@@ -237,6 +251,9 @@ void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap) {
         for(int i=0; i!=adjMap[now].size(); ++i)//遍历所有与当前点有路径的点
         {
             const int &next=adjMap[now][i].destNode;//目标点，不妨定义成常量引用，稍稍快些
+            if (forbidLists.find(next)!=forbidLists.end()) {
+                continue;
+            }
             if(destDist[now]<INF&&//若距离已知（否则下面右式计算结果必爆int），且
                //注：与运算先判断左式是否成立，若不成立则右式不会被判断
                destDist[next]>destDist[now]+adjMap[now][i].edgeCost)//优于当前值
@@ -267,6 +284,7 @@ void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap) {
         passedNodes.clear();
         int cost=0;
         while (precNode[nodeJ]!=-1) {
+            beenTimes[nodeJ]++;
             passedNodes.insert(nodeJ);
             passedEdges.push_back(precEdge[nodeJ]);
             //cout << precEdge[nodeJ]->edgeNum << "-" << precEdge[nodeJ] << "-" << precEdge[nodeJ]->destNode << endl;
@@ -278,6 +296,10 @@ void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap) {
             }
         }
         if (cost>0) {
+            if (Ant::distance[sourceNode][nodeI]!=-1 && Ant::distance[sourceNode][nodeI]==cost) {
+                continue;
+            }
+            Ant::distance[sourceNode][nodeI]=cost;
             NewDirectedEdge newEdge(nodeI,-1,cost,MUTLI_PHENO,passedEdges,passedNodes);
             Ant::newMap[sourceNode].push_back(newEdge);
         }
@@ -332,13 +354,41 @@ void search_route(char *topo[5000], int edge_num, char *demand)
         vector<DirectedEdge*> passedEdges={place};
         NewDirectedEdge edgeNow2(topoVec[2],topoVec[0],topoVec[3],START_PHENO,passedEdges,passedNodes);
         Ant::newMap[topoVec[1]].push_back(edgeNow2);
+        Ant::nodes=max(Ant::nodes,max(topoVec[1]+1,topoVec[2]+1));
         //cout << edgeNow2.passedEdges[0]->edgeNum << ":" << edgeNow2.passedEdges[0] << ":" << edgeNow2.passedEdges[0]->destNode << endl;
     }//字符串转换成临接表originMap
     //getchar();
+
+    memset(Ant::distance,-1,sizeof(Ant::distance));
+    beenTimes.assign(Ant::nodes,0);
+    set<int> forbidLists = {};
+    forbidLists.clear();
     for (auto nodeI : Ant::demandSet) {
-        spfa(nodeI,Ant::originMap);
+        spfa(nodeI,Ant::originMap,forbidLists);
     }
-    spfa(sourceNode,Ant::originMap);
+    spfa(sourceNode,Ant::originMap,forbidLists);
+    cout << "edges:" << Ant::countEdges() << endl;
+    vector<pair<int,int> > beenSorted;
+    beenSorted.clear();
+
+    for (int i=0;i<Ant::nodes;i++) {
+        if (beenTimes[i]>0) {
+            beenSorted.push_back(pair<int,int>(i,beenTimes[i]));
+        }
+    }
+
+    sort(beenSorted.begin(),beenSorted.end(),[](const pair<int,int> &x,const pair<int,int> &y) -> bool { return x.second > y.second; });
+
+    for (int i=0; i<=(0.02*static_cast<int>(beenSorted.size())); i++) {
+        forbidLists.insert(beenSorted[i].first);
+    }
+
+    for (auto nodeI : Ant::demandSet) {
+        spfa(nodeI,Ant::originMap,forbidLists);
+    }
+    spfa(sourceNode,Ant::originMap,forbidLists);
+    cout << "edges:" << Ant::countEdges() << endl;
+
 
     Ant::currentCost=99999;
     Ant::currentAnswer.clear();
