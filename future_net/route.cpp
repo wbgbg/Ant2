@@ -75,7 +75,7 @@ NewDirectedEdge* Ant::selectEdge() {
                     cout << "cost 0";
                     break;
                 }
-                if(nextEdge->edgeNum == -1){
+                if(nextEdge->edgeNum <= -1){
                     answer1 = pow(nextEdge->pheno,constArg.at("ALPHA"))*pow(constArg.at("Q_DIST")/nextEdge->edgeCost,constArg.at("BETA"));
                 }
                 else{
@@ -126,7 +126,12 @@ int maxlen=0;//当前含V'节点最多的路径中的V'节点数
 int Ant::countEdges() {
     int ans=0;
     for (int i=0; i<nodes;i++) {
-        ans+=newMap[i].size();
+        for (int j=0; j<newMap[i].size();j++) {
+            if (newMap[i][j].pheno>0 && newMap[i][j].edgeNum<0) {
+                ans++;
+                //cout << i << "->" << newMap[i][j].destNode << ":" << newMap[i][j].edgeCost << endl;
+            }
+        }
     }
     return ans;
 }
@@ -231,6 +236,7 @@ void timeOver(int x) {
 }
 
 void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap, set<int> forbidLists) {
+    //cout << "sourceNode:" << sourceNode << endl;
     if (forbidLists.find(sourceNode)!=forbidLists.end()) {
         return;
     }
@@ -284,6 +290,7 @@ void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap, set<int>
         passedNodes.clear();
         int cost=0;
         while (precNode[nodeJ]!=-1) {
+            //cout << nodeJ << endl;
             beenTimes[nodeJ]++;
             passedNodes.insert(nodeJ);
             passedEdges.push_back(precEdge[nodeJ]);
@@ -296,12 +303,19 @@ void spfa(const int &sourceNode, vector<vector<DirectedEdge> > &adjMap, set<int>
             }
         }
         if (cost>0) {
-            if (Ant::distance[sourceNode][nodeI]!=-1 && Ant::distance[sourceNode][nodeI]==cost) {
+            beenTimes[sourceNode]++;
+            if (Ant::distance[sourceNode][nodeI]>0 && Ant::distance[sourceNode][nodeI]==cost) {
                 continue;
             }
             Ant::distance[sourceNode][nodeI]=cost;
-            NewDirectedEdge newEdge(nodeI,-1,cost,MUTLI_PHENO,passedEdges,passedNodes);
-            Ant::newMap[sourceNode].push_back(newEdge);
+            if (forbidLists.size()==0) {
+                NewDirectedEdge newEdge(nodeI, -1, cost, MUTLI_PHENO, passedEdges, passedNodes);
+                Ant::newMap[sourceNode].push_back(newEdge);
+            } else {
+                NewDirectedEdge newEdge(nodeI, -2, cost, MUTLI_PHENO, passedEdges, passedNodes);
+                Ant::newMap[sourceNode].push_back(newEdge);
+                Ant::distance[sourceNode][nodeI]=-2;
+            }
         }
     }
 }
@@ -374,21 +388,35 @@ void search_route(char *topo[5000], int edge_num, char *demand)
     for (int i=0;i<Ant::nodes;i++) {
         if (beenTimes[i]>0) {
             beenSorted.push_back(pair<int,int>(i,beenTimes[i]));
+            //cout << i << ":" << beenTimes[i] << endl;
         }
     }
 
     sort(beenSorted.begin(),beenSorted.end(),[](const pair<int,int> &x,const pair<int,int> &y) -> bool { return x.second > y.second; });
-
     for (int i=0; i<=min(5, static_cast<int>(beenSorted.size()*0.02)); i++) {
         forbidLists.insert(beenSorted[i].first);
     }
-
+/*
+    for (auto x : forbidLists) {
+        cout << "forbid:" << x << endl;
+    }
+*/
     for (auto nodeI : Ant::demandSet) {
         spfa(nodeI,Ant::originMap,forbidLists);
     }
     spfa(sourceNode,Ant::originMap,forbidLists);
     cout << "edges:" << Ant::countEdges() << endl;
 
+    for (int i=0;i<Ant::nodes;i++) {
+        for (int j=0;j<Ant::newMap[i].size();j++) {
+            auto edge=Ant::newMap[i][j];
+            if (Ant::distance[i][edge.destNode]==-2 && edge.edgeNum!=-2) {
+                Ant::newMap[i][j].pheno=0;
+            }
+        }
+    }
+
+    cout << "edges:" << Ant::countEdges() << endl;
 
     Ant::currentCost=99999;
     Ant::currentAnswer.clear();
