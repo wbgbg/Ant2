@@ -379,7 +379,7 @@ void search_route(char *topo[5000], int edge_num, char *demand)
 
     sort(beenSorted.begin(),beenSorted.end(),[](const pair<int,int> &x,const pair<int,int> &y) -> bool { return x.second > y.second; });
 
-    for (int i=0; i<=(0.02*static_cast<int>(beenSorted.size())); i++) {
+    for (int i=0; i<=min(5, static_cast<int>(beenSorted.size()*0.02)); i++) {
         forbidLists.insert(beenSorted[i].first);
     }
 
